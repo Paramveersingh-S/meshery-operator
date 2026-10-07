@@ -132,7 +132,10 @@ func main() {
 	// is required because the CRDs declare conversion strategy Webhook.
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		certPath := "/tmp/k8s-webhook-server/serving-certs/tls.crt"
-		if _, err := os.Stat(certPath); err == nil || os.Getenv("ENABLE_WEBHOOKS") == "true" {
+		keyPath := "/tmp/k8s-webhook-server/serving-certs/tls.key"
+		_, certErr := os.Stat(certPath)
+		_, keyErr := os.Stat(keyPath)
+		if (certErr == nil && keyErr == nil) || os.Getenv("ENABLE_WEBHOOKS") == "true" {
 			if err = ctrl.NewWebhookManagedBy(mgr).For(&mesheryv1alpha2.Broker{}).Complete(); err != nil {
 				setupLog.Error(err, "unable to create webhook", "webhook", "Broker")
 				os.Exit(1)
@@ -142,7 +145,7 @@ func main() {
 				os.Exit(1)
 			}
 		} else {
-			setupLog.Info("Webhook serving certificates not found at " + certPath + ", skipping webhook registration. If webhooks are required, ensure certs are mounted or set ENABLE_WEBHOOKS=true to force.")
+			setupLog.Info("Webhook serving certificate or key not found, skipping webhook registration. If webhooks are required, ensure certs are mounted or set ENABLE_WEBHOOKS=true to force.", "certPath", certPath, "keyPath", keyPath)
 		}
 	}
 	// +kubebuilder:scaffold:builder
